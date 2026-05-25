@@ -129,7 +129,7 @@ class GESSO:
         n_partitions: int | None = None,
         partition_method: Literal["random", "stratified_kmeans"] = "stratified_kmeans",
         partition_seed: int = 42,
-        store_metagenes: bool = True,
+        store_gene_contributions: bool = True,
     ) -> GeneSetActivityScoresReport:
         """
         Parameters
@@ -171,15 +171,15 @@ class GESSO:
         partition_seed : int
             Default: 42. Random seed for reproducibility.
 
-        store_metagenes : bool
-            Default: True. If True, stores metagene values.
-            Set to False for memory-intensive tasks that do not require metagene values.
+        store_gene_contributions : bool
+            Default: True. If True, stores gene contribution values.
+            Set to False for memory-intensive tasks that do not require gene contribution values.
 
         Returns
         -------
         GeneSetActivityScoresReport
             A report containing the gene set activity scores DataFrame and
-            metagene DataFrames (if store_metagenes is True).
+            gene contribution DataFrames (if store_gene_contributions is True).
         """
         if beta < 0 or beta > 1:
             raise ValueError('Parameter "beta" must be in interval [0, 1].')
@@ -219,7 +219,7 @@ class GESSO:
                 verbose=self._verbose,
             )
             gas_df = pd.DataFrame(columns=self._expression_df.columns)
-            geneset_to_metagene_df_dict = dict()
+            geneset_to_gene_contributions_df_dict = dict()
 
             L = self._laplacian
             method_f = gLPCA_sparse
@@ -236,7 +236,7 @@ class GESSO:
                     geneset_name=geneset,
                     genes_in_geneset=genes_in_geneset,
                     job_num=job_num,
-                    metagene_sign_assignment_method="sign_overall_expression_proxy",
+                    gene_contribution_sign_assignment_method="sign_overall_expression_proxy",
                     verbose=self._verbose,
                 )
                 return geneset, v, u, genes_in_geneset
@@ -260,15 +260,15 @@ class GESSO:
 
             for geneset, v, u, genes_in_geneset in results:
                 gas_df.loc[geneset] = v
-                if store_metagenes:
-                    geneset_to_metagene_df_dict[geneset] = pd.DataFrame(
+                if store_gene_contributions:
+                    geneset_to_gene_contributions_df_dict[geneset] = pd.DataFrame(
                         u, index=genes_in_geneset, columns=[geneset]
                     )
 
             return GeneSetActivityScoresReport(
                 gas_df=gas_df.transpose(),
                 locations_df=self._locations_df,
-                geneset_to_metagene_df_dict=geneset_to_metagene_df_dict,
+                geneset_to_gene_contributions_df_dict=geneset_to_gene_contributions_df_dict,
             )
 
         elif compute_method == "lowres":
@@ -320,7 +320,7 @@ class GESSO:
                     geneset_name=geneset,
                     genes_in_geneset=genes_in_geneset,
                     job_num=job_num,
-                    metagene_sign_assignment_method="sign_overall_expression_proxy",
+                    gene_contribution_sign_assignment_method="sign_overall_expression_proxy",
                     verbose=self._verbose,
                 )
                 return (
@@ -392,8 +392,8 @@ class GESSO:
                 )
 
             gas_updates = []
-            if store_metagenes:
-                geneset_to_metagene_list_dict = {g: [] for g in genesets}
+            if store_gene_contributions:
+                geneset_to_gene_contributions_list_dict = {g: [] for g in genesets}
 
             for result_idx, (geneset, v, u, _, subset_index, _, _) in enumerate(
                 results
@@ -405,8 +405,8 @@ class GESSO:
                 u_final = -u if do_flip else u
 
                 gas_updates.append((geneset, subset_index, v_final))
-                if store_metagenes:
-                    geneset_to_metagene_list_dict[geneset].append(u_final)
+                if store_gene_contributions:
+                    geneset_to_gene_contributions_list_dict[geneset].append(u_final)
 
             gas_df = pd.DataFrame(
                 np.nan, index=genesets, columns=self._expression_df.columns
@@ -415,24 +415,29 @@ class GESSO:
             for geneset, subset_index, v in gas_updates:
                 gas_df.loc[geneset, subset_index] = v
 
-            # average metagene values across subsets
-            geneset_to_metagene_df_dict = {}
-            if store_metagenes:
-                for geneset, metagenes in geneset_to_metagene_list_dict.items():
+            # average gene contribution values across subsets
+            geneset_to_gene_contributions_df_dict = {}
+            if store_gene_contributions:
+                for (
+                    geneset,
+                    gene_contributions,
+                ) in geneset_to_gene_contributions_list_dict.items():
                     genes_in_geneset = (
                         genesets_dict[geneset]
                         if genesets_dict is not None
                         else self._genesets_df[self._genesets_df[geneset] == 1].index
                     )
-                    metagene_average = np.mean(metagenes, axis=0)
-                    geneset_to_metagene_df_dict[geneset] = pd.DataFrame(
-                        metagene_average, index=genes_in_geneset, columns=[geneset]
+                    gene_contributions_average = np.mean(gene_contributions, axis=0)
+                    geneset_to_gene_contributions_df_dict[geneset] = pd.DataFrame(
+                        gene_contributions_average,
+                        index=genes_in_geneset,
+                        columns=[geneset],
                     )
 
             return GeneSetActivityScoresReport(
                 gas_df=gas_df.transpose(),
                 locations_df=self._locations_df,
-                geneset_to_metagene_df_dict=geneset_to_metagene_df_dict,
+                geneset_to_gene_contributions_df_dict=geneset_to_gene_contributions_df_dict,
             )
 
         else:
