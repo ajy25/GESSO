@@ -87,3 +87,14 @@ class TestPermutationTestReport:
         fig = htest_report.plot_pval_spatial_map(ax=ax)
         assert isinstance(fig, Figure)
         plt.close("all")
+
+    def test_plot_gas_spatial_map_returns_figure(self, htest_report):
+        fig = htest_report.plot_gas_spatial_map()
+        assert isinstance(fig, Figure)
+        plt.close(fig)
+
+    def test_plot_gas_spatial_map_with_user_axes(self, htest_report):
+        _, ax = plt.subplots()
+        fig = htest_report.plot_gas_spatial_map(ax=ax)
+        assert isinstance(fig, Figure)
+        plt.close("all")

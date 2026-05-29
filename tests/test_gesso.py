@@ -248,6 +248,17 @@ class TestComputeGAS:
         assert abs(corr_b) > 0.5
         assert np.sign(corr_a) != np.sign(corr_b)
 
+    def test_low_coverage_geneset_warns(self, gesso_model_no_genesets, gene_names):
+        # only 1 of 30 genes is in the dataset -> ~3.3% coverage (< 5%)
+        low_coverage = {
+            "sparse_geneset": [gene_names[0]] + [f"absent_{i}" for i in range(29)]
+        }
+        with pytest.warns(UserWarning, match="genes remain after filtering"):
+            gesso_model_no_genesets.compute_gas(
+                genesets_dict=low_coverage,
+                n_jobs=1,
+            )
+
 
 class TestHTest:
     def test_returns_permutation_report(self, gesso_model, genesets_dict):

@@ -232,7 +232,6 @@ class GESSO:
             n_jobs = 1
         n_jobs = min(len(genesets), n_jobs)
 
-        # warn if any geneset has < 5% coverage after filtering to dataset genes
         expression_gene_set = set(self._expression_df.index)
         for geneset_name in genesets:
             if genesets_dict is None:
@@ -253,10 +252,7 @@ class GESSO:
                     stacklevel=2,
                 )
 
-        # resolve effective verbose for this call
         call_verbose = self._verbose if verbose is None else verbose
-        # snapshot the per-geneset logger level so workers can replicate it
-        # (workers spawn fresh and don't inherit the main process's logger config)
         worker_log_level = logging.getLogger(GENESET_LOGGER).getEffectiveLevel()
 
         # begin computation
@@ -273,8 +269,12 @@ class GESSO:
             method_f = gLPCA_sparse
 
             def process_geneset(
-                geneset: str, genes_in_geneset: pd.Index, job_num: int
+                geneset: str, genes_in_geneset, job_num: int
             ) -> tuple[str, np.ndarray, np.ndarray, pd.Index]:
+                # keep only genes present in the expression matrix (preserves order)
+                genes_in_geneset = [
+                    g for g in genes_in_geneset if g in expression_gene_set
+                ]
                 X: np.ndarray = self._expression_df.loc[genes_in_geneset].to_numpy()
                 X = bulk_standard_scale(X, axis=1)
                 u, v, _, _ = method_f(
@@ -392,6 +392,10 @@ class GESSO:
                     ].index
                 else:
                     genes_in_geneset = genesets_dict[geneset]
+                # keep only genes present in the expression matrix (preserves order)
+                genes_in_geneset = [
+                    g for g in genes_in_geneset if g in expression_gene_set
+                ]
                 for subset_num, subset_index in enumerate(partitioned_indices):
                     parallel_input_list.append(
                         (
@@ -470,6 +474,10 @@ class GESSO:
                         if genesets_dict is not None
                         else self._genesets_df[self._genesets_df[geneset] == 1].index
                     )
+                    # match the filtering applied during computation above
+                    genes_in_geneset = [
+                        g for g in genes_in_geneset if g in expression_gene_set
+                    ]
                     gene_contributions_average = np.mean(gene_contributions, axis=0)
                     geneset_to_gene_contributions_df_dict[geneset] = pd.DataFrame(
                         gene_contributions_average,

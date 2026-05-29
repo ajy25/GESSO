@@ -35,14 +35,9 @@ test = [
 
 
 [project.urls]
-Homepage = ""
+Homepage = "https://github.com/YMa-Lab/GESSO"
+Documentation = "https://gesso-malab.readthedocs.io/"
 
-
-
-[tool.hatch.metadata]
-packages = [
-    {include = "splat"}
-]
 
 
 [tool.pytest.ini_options]

@@ -212,7 +212,7 @@ class PermutationTestReport:
             fig = ax.get_figure()
         plotting_df = self._permutation_test_df
 
-        cdata = plotting_df[self._geneset].to_numpy()
+        cdata = plotting_df["gas"].to_numpy()
         scatter = ax.scatter(
             x=plotting_df["x"],
             y=plotting_df["y"],

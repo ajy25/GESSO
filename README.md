@@ -15,7 +15,7 @@ conda activate gesso
 GESSO requires Python version 3.12. The following script installs GESSO into your Python environment:
 ```bash
 git clone https://github.com/YMa-Lab/GESSO.git
-cd gesso
+cd GESSO
 pip install .
 cd ..
 ```
@@ -37,7 +37,7 @@ locations_df: pd.DataFrame = ...
 model = GESSO(
     expression_df=expression_df,
     locations_df=locations_df,
-    k=20,   # increase k to increase spatial smoothing effect
+    k=20,
     normalize_counts_method="normalize-log1p"   # optional, use for raw data
 )
 
@@ -56,46 +56,12 @@ gas_df.to_csv("gas_output.csv")
 htest_report = model.htest_elevated_gas(
     geneset="example_geneset_1",
     genes_in_geneset=["gene1", "gene2", "gene3"],
-    control_size=200,
+    n_permutations=500,     # number of random gene sets to sample
     n_jobs=8
 )
-htest_df = htest_report.htest_df()  # returns N by 4 df w/ columns 'x', 'y', 'p', 'gas'
+htest_df = htest_report.htest_df()  # returns N by 4 df w/ columns 'x', 'y', 'gas', 'p'
 htest_df.to_csv("htest_output.csv")
 ```
-### Logging
-GESSO uses Python's standard `logging` module under the `gesso.*` hierarchy. By
-default the package is silent (a `NullHandler` is installed on the root
-`gesso` logger). Configure output via the `gesso.logging` submodule:
-
-```python
-from gesso import logging as glog
-
-glog.enable()                          # print INFO messages to stderr
-glog.set_level("DEBUG")                # show debug-level messages as well
-glog.silence_per_geneset()             # mute per-geneset progress, keep summaries
-glog.unsilence_per_geneset()           # re-enable per-geneset progress
-handler = glog.add_file_handler("gesso.log", level="DEBUG")  # also log to file
-glog.remove_handler(handler)           # detach when done
-glog.disable()                         # back to silent
-```
-
-Logger hierarchy:
-
-| Logger                      | What it emits                                       |
-| --------------------------- | --------------------------------------------------- |
-| `gesso`                     | Root; configure here to affect everything           |
-| `gesso.init`                | Preprocessing / model initialization messages       |
-| `gesso.compute`             | High-level activity-score computation summaries     |
-| `gesso.compute.geneset`     | Per-geneset progress and timing (chatty in workers) |
-
-Each public method that emits log messages also accepts `verbose=True/False` as
-a per-call override. Passing `verbose=False` suppresses **all** messages for
-that call (including worker output), independent of logger configuration. The
-`verbose` argument on `GESSO(...)` sets the default for all calls on that
-model instance.
-
-If you have your own application logging configured, you can also attach
-handlers directly via stdlib: `logging.getLogger("gesso").addHandler(...)`.
 
 ### Tutorial
 For the step-by-step tutorial, please refer to: [GESSO tutorial](https://gesso-malab.readthedocs.io/)
