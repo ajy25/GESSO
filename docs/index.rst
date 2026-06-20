@@ -3,6 +3,8 @@ GESSO
 GESSO (Gene sEt activity Score analysis with Spatial lOcation) is a Python package 
 for spatially informed gene set expression analysis.
 
+GESSO's source code can be found at `GitHub <https://github.com/YMa-lab/GESSO>`_.
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
